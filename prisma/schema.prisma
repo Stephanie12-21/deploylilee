@@ -1,0 +1,268 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model article {
+  id              Int       @id @default(autoincrement())
+  titre           String
+  contenu         String
+  categorieArticle String
+  images          image[]  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model image {
+  id        Int      @id @default(autoincrement())
+  path      String   
+  articleId Int      
+  article   article  @relation(fields: [articleId], references: [id])
+}
+
+
+
+model user {
+  id                 Int            @id @default(autoincrement())
+  nom                String
+  prenom             String
+  email              String         @unique
+  phone              String         @unique
+  hashPassword       String
+  statutUser         statutUser
+  role               role
+  profileImages      profileImage[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  companyId          Int?
+  company            company?       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  annonces           annonces[]
+  commentaire        commentaire[]
+  favoris            favoris[]
+  temoignages        temoignages[]
+  sentMessages       message[]      @relation("UserMessages")
+  receivedMessages   message[]      @relation("UserReceivedMessages")
+}
+
+enum statutUser {
+  ACTIF
+  SUSPENDU
+}
+
+model company {
+  id              Int          @id @default(autoincrement())
+  siret           String       @unique
+  nomSociete      String       @unique
+  codePostal      String
+  adresse         String
+  ville           String
+  secteurActivite secteurActivite
+  typeSociete     typeSociete
+  users           user[]       
+}
+
+enum secteurActivite {
+  IMMOBILIER
+  VETEMENT
+  EMPLOI
+  SERVICE
+  VOITURE
+  LOISIR
+  MATERIEL
+  MOBILIER
+}
+
+enum role {
+  PERSO     
+  PRO 
+  ADMIN       
+}
+
+enum typeSociete {
+  ENTREPRISE_INDIVIDUELLE
+  SOCIETE_PRIVEE
+  SOCIETE_PUBLIQUE
+  COOPERATIVE
+  ASSOCIATION
+}
+
+model profileImage {
+  id        Int      @id @default(autoincrement())
+  path      String   // URL ou chemin de l'image
+  userId    Int      // ID de l'utilisateur auquel l'image est associée
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+
+
+
+
+model favoris {
+  id                Int         @id @default(autoincrement())
+  saveDate          DateTime    @default(now())
+  userId            Int
+  annonceId         Int
+  user              user        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  annonce           annonces    @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+  
+}
+
+
+
+
+
+
+
+model annonces {
+  id                Int          @id @default(autoincrement())
+  titre             String       @unique
+  description       String
+  prix              Decimal?
+  typeTarif         typeTarif?  
+  localisation      String?
+  adresse           String
+  statut            statut?      @default(EN_ATTENTE_DE_VALIDATION)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  imageAnnonces     imageAnnonce[]
+  categorieAnnonce  categorieAnnonce
+  sousCategorie     String
+  userId            Int         
+  user              user          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentaire       commentaire[] 
+  favoris           favoris[]  
+  messages          message[] 
+}
+
+enum statut {
+  PUBLIEE       
+  DESACTIVEE  
+  EN_ATTENTE_DE_VALIDATION      
+}
+
+enum typeTarif {
+  JOURNALIER
+  NUITEE
+  FIXE
+  MENSUEL
+}
+
+
+model imageAnnonce {
+  id            Int      @id @default(autoincrement())
+  path          String   
+  annoncesId    Int      
+  annonces      annonces  @relation(fields: [annoncesId], references: [id], onDelete: Cascade)
+}
+
+enum categorieAnnonce {
+  IMMOBILIER
+  VETEMENT
+  EMPLOI_SERVICE
+  VOITURE
+  LOISIR
+  MATERIEL
+  MOBILIER
+  DONS
+}
+
+
+
+
+
+
+
+
+model commentaire { 
+  id                Int       @id @default(autoincrement())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  commentaire       String
+  note              Int?
+  annoncesId        Int
+  annonces          annonces   @relation(fields: [annoncesId], references: [id])
+  userId            Int
+  user              user      @relation(fields: [userId], references: [id])
+}
+
+
+
+
+
+model temoignages{
+  id                Int @id @default(autoincrement())
+  temoignage        String
+  noteLilee         Int
+  userId            Int
+  user              user      @relation(fields: [userId], references: [id])
+}
+
+
+
+
+
+
+model message {
+  id              Int             @id @default(autoincrement())
+  content         String?
+  senderId        Int
+  receiverId      Int
+  annonceId       Int
+  sentAt          DateTime        @default(now())
+  sender          user            @relation("UserMessages", fields: [senderId], references: [id])
+  receiver        user            @relation("UserReceivedMessages", fields: [receiverId], references: [id])
+  annonce         annonces        @relation(fields: [annonceId], references: [id])
+  imageMessages   imageMessages[] // Relation vers les images
+}
+
+model imageMessages {
+  id            Int      @id @default(autoincrement())
+  path          String   
+  messageId     Int      
+  messages      message?  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+
+
+
+
+
+
+model newsletter {
+  id                Int     @id @default(autoincrement())
+  email             String  @unique
+  unsubscribeToken  String? // Optionnel
+}
+
+// enum plan {
+//  UNE
+//  RECOMMANDATION
+//  URGENT
+// }
+
+// enum periode {
+//   SEMAINE
+//   MOIS
+// }
+
+// model boost {
+//   id            Int          @id @default(autoincrement())
+//   plan          plan                 
+//   periode       periode      
+//   createdAt     DateTime     @default(now())  
+//   updatedAt     DateTime     @updatedAt       
+//   debutDate     DateTime     @default(now())  
+//   finDate       DateTime    
+//   annonceId     Int          @unique          
+//   annonce       annonces     @relation(fields: [annonceId], references: [id], onDelete: Cascade) // Relation un-à-un avec l'annonce
+// }
+
+
